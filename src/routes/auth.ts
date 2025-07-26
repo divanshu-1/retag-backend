@@ -191,7 +191,7 @@ router.get('/google/callback',
       const user = req.user as any;
       if (!user) {
         console.error('No user found in request after Google authentication');
-        return res.redirect('http://localhost:9002/#auth-error=no-user');
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:9002'}/#auth-error=no-user`);
       }
       const payload = { 
         id: user._id, // Ensure id is included
@@ -201,17 +201,17 @@ router.get('/google/callback',
       };
       const token = jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: '7d' });
       console.log('Google OAuth successful for user:', user.email);
-      res.redirect(`http://localhost:9002/#token=${token}`);
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:9002'}/#token=${token}`);
     } catch (error) {
       console.error('Error in Google OAuth callback:', error);
-      res.redirect('http://localhost:9002/#auth-error=callback-error');
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:9002'}/#auth-error=callback-error`);
     }
 });
 
 // OAuth failure route
 router.get('/failure', (req, res) => {
   console.error('Google OAuth authentication failed');
-  res.redirect('http://localhost:9002/#auth-error=authentication-failed');
+  res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:9002'}/#auth-error=authentication-failed`);
 });
 
 // Example protected route
