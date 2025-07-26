@@ -76,12 +76,10 @@ const UserSchema = new Schema<IUser>({
   // Authentication fields
   googleId: {
     type: String,
-    unique: true,
     sparse: true  // Allows multiple null values (for non-OAuth users)
   },
   email: {
     type: String,
-    unique: true,
     required: true,
     lowercase: true,  // Store emails in lowercase
     trim: true        // Remove whitespace
@@ -139,7 +137,7 @@ const UserSchema = new Schema<IUser>({
 /**
  * Indexes for better query performance
  */
-UserSchema.index({ email: 1 });      // Index on email for login queries
-UserSchema.index({ googleId: 1 });   // Index on googleId for OAuth queries
+UserSchema.index({ email: 1 }, { unique: true });      // Unique index on email for login queries
+UserSchema.index({ googleId: 1 }, { unique: true, sparse: true });   // Unique sparse index on googleId for OAuth queries
 
 export default mongoose.model<IUser>('User', UserSchema);
