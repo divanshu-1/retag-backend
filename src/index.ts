@@ -125,7 +125,7 @@ mongoose.connect(process.env.MONGO_URI!)
 app.get('/', (req, res) => {
   res.json({
     message: 'ReTag API is running!',
-    version: '1.0.0',
+    version: '1.0.1',
     status: 'healthy',
     timestamp: new Date().toISOString()
   });
