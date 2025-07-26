@@ -52,8 +52,7 @@ router.post('/test-order', async (req, res) => {
     }
 });
 
-console.log("DEBUG KEY_ID:", process.env.RAZORPAY_KEY_ID);
-console.log("DEBUG KEY_SECRET:", process.env.RAZORPAY_KEY_SECRET);
+// Razorpay credentials loaded from environment variables
 
 
 const instance = new Razorpay({
