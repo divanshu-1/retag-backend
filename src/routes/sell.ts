@@ -2,29 +2,39 @@ import express, { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import aiService, { ProductAnalysis } from '../utils/aiService';
 import Product from '../models/Product';
-import multer, { StorageEngine } from 'multer';
+import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { cloudinaryStorage } from '../config/cloudinary';
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads/');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
+// Use Cloudinary storage for production, local storage for development
+const useCloudinary = process.env.NODE_ENV === 'production' || process.env.USE_CLOUDINARY === 'true';
 
-// Multer setup for disk storage
-const storage: StorageEngine = multer.diskStorage({
-  destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+let upload: multer.Multer;
+
+if (useCloudinary) {
+  // Use Cloudinary storage
+  upload = multer({ storage: cloudinaryStorage });
+} else {
+  // Use local disk storage for development
+  const uploadsDir = path.join(__dirname, '../../uploads/');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
   }
-});
-const upload = multer({ storage });
+
+  const localStorage = multer.diskStorage({
+    destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
+      cb(null, uploadsDir);
+    },
+    filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+  });
+  upload = multer({ storage: localStorage });
+}
 
 // Debug middleware for Multer
 function logMulter(req: Request, res: Response, next: NextFunction) {
@@ -94,11 +104,15 @@ router.post('/submit',
         console.error('Error processing image:', imgErr);
         return res.status(500).json({ message: 'Error processing image' });
       }
-      // Save only the relative path for images
+      // Process images based on storage type
       const processedImages = files.map(file => {
-        // file.path might be /Users/username/.../uploads/filename.jpg
-        // file.filename is just 'filename.jpg'
-        return 'uploads/' + file.filename;
+        if (useCloudinary) {
+          // For Cloudinary, use the secure_url from the uploaded file
+          return (file as any).path; // Cloudinary returns the full URL in file.path
+        } else {
+          // For local storage, use relative path
+          return 'uploads/' + file.filename;
+        }
       });
       let aiAnalysis;
       try {
